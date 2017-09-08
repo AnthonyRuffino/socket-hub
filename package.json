@@ -1,0 +1,26 @@
+{
+  "name": "socket-hub",
+  "version": "1.0.0",
+  "description": "NodeJS module for registering multiple socket-io bindings",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnthonyRuffino/socket-hub.git"
+  },
+  "keywords": [
+    "socket.io",
+    "socket-io",
+    "socket-hub",
+    "socket",
+    "hub"
+  ],
+  "author": "Anthony Ruffino",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AnthonyRuffino/socket-hub/issues"
+  },
+  "homepage": "https://github.com/AnthonyRuffino/socket-hub#readme"
+}
