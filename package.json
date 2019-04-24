@@ -1,6 +1,6 @@
 {
   "name": "socket-hub",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "NodeJS module for registering multiple socket-io bindings",
   "main": "socket-hub.js",
   "scripts": {
