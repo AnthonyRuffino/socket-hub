@@ -2,7 +2,7 @@
   "name": "socket-hub",
   "version": "1.0.0",
   "description": "NodeJS module for registering multiple socket-io bindings",
-  "main": "index.js",
+  "main": "socket-hub.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,5 +22,12 @@
   "bugs": {
     "url": "https://github.com/AnthonyRuffino/socket-hub/issues"
   },
-  "homepage": "https://github.com/AnthonyRuffino/socket-hub#readme"
+  "homepage": "https://github.com/AnthonyRuffino/socket-hub#readme",
+  "dependencies": {
+    "async": "^0.2.10",
+    "cookie": "^0.3.1",
+    "lazy-namer": "^1.0.1",
+    "node-gameloop": "^0.1.4",
+    "socket.io": "^2.2.0"
+  }
 }
