@@ -1,11 +1,12 @@
-/* jshint node:true */ /* global define, escape, unescape */
+/* jshint node:true */
 "use strict";
 
 class SocketHub {
-	constructor({ server, tokenUtil, subdomainContent, storming, anonymousSuffix, rootHost }) {
+	constructor({ appName, server, tokenUtil, subdomainContent, storming, anonymousSuffix, rootHost }) {
+		this.appName = appName;
 		this.messages = {};
 		this.sockets = [];
-		this.socketNcidenceCookieMap = {};
+		this.socketAppCookieMap = {};
 		this.socketIdMap = {};
 		this.subdomainInfoMap = {};
 		this.rootHost = rootHost;
@@ -25,7 +26,7 @@ class SocketHub {
 		this.anonymousNamesFromCookie = {};
 		this.anonymousNamesInUse = {};
 
-		this.backendBuilder = require(global.__rootdir + './backend-builder.js')({
+		this.backendBuilder = require('./backend-builder.js')({
 			backendLogs: this.backendLogs,
 			subdomainContent: this.subdomainContent,
 			broadcast: this.broadcast,
@@ -33,20 +34,20 @@ class SocketHub {
 		});
 	}
 
-	getAnonymousUserName(ncidenceCookie, callCount) {
+	getAnonymousUserName(appCookie, callCount) {
 		callCount = callCount || 1;
-		if (!this.anonymousNamesFromCookie[ncidenceCookie]) {
+		if (!this.anonymousNamesFromCookie[appCookie]) {
 			const anonymousName = `${this.lazyNamer.getName(2)}${this.anonymousSuffix}`;
 			if (this.anonymousNamesInUse[anonymousName]) {
 				if (callCount > 10) {
-					return `${ncidenceCookie}${this.anonymousSuffix}`;
+					return `${appCookie}${this.anonymousSuffix}`;
 				}
-				return this.getAnonymousUserName(ncidenceCookie, callCount++);
+				return this.getAnonymousUserName(appCookie, callCount++);
 			}
-			this.anonymousNamesFromCookie[ncidenceCookie] = anonymousName;
+			this.anonymousNamesFromCookie[appCookie] = anonymousName;
 			this.anonymousNamesInUse[anonymousName] = true;
 		}
-		return this.anonymousNamesFromCookie[ncidenceCookie];
+		return this.anonymousNamesFromCookie[appCookie];
 	}
 
 	isAnonymousUserName(username) {
@@ -54,11 +55,11 @@ class SocketHub {
 	}
 
 	logoutUserHook(req) {
-		const ncidenceCookie = req.cookies.ncidence;
-		if (ncidenceCookie && this.socketNcidenceCookieMap[ncidenceCookie] !== undefined) {
-			this.socketNcidenceCookieMap[ncidenceCookie].forEach(socketId => {
+		const appCookie = req.cookies[this.appName];
+		if (appCookie && this.socketAppCookieMap[appCookie] !== undefined) {
+			this.socketAppCookieMap[appCookie].forEach(socketId => {
 				if (this.socketIdMap[socketId] != undefined) {
-					const anonymousUserName = this.getAnonymousUserName(ncidenceCookie);
+					const anonymousUserName = this.getAnonymousUserName(appCookie);
 					const socket = this.socketIdMap[socketId];
 					socket.loggedOut = true;
 					socket.name = anonymousUserName;
@@ -71,9 +72,9 @@ class SocketHub {
 
 
 	loginUserHook(req, user, token) {
-		const ncidenceCookie = req.cookies.ncidence;
-		if (ncidenceCookie && this.socketNcidenceCookieMap[ncidenceCookie] !== undefined) {
-			this.socketNcidenceCookieMap[ncidenceCookie].forEach(socketId => {
+		const appCookie = req.cookies[this.appName];
+		if (appCookie && this.socketAppCookieMap[appCookie] !== undefined) {
+			this.socketAppCookieMap[appCookie].forEach(socketId => {
 				if (this.socketIdMap[socketId] !== undefined) {
 					const socket = this.socketIdMap[socketId];
 					socket.name = user.username;
@@ -116,19 +117,19 @@ class SocketHub {
 	init() {
 		this.io.on('connection', async(socket) => {
 			//
-			//  Get ncidenceCookie (Unique per browser session);
+			//  Get appCookie (Unique per browser session);
 			//
 			socket.cookies = this.cookie.parse(socket.request.headers.cookie || '');
-			const ncidenceCookie = socket.cookies.ncidence;
+			const appCookie = socket.cookies[this.appName];
 
 
 			//
 			//  Create List of all sockets related to the curent user
 			//
-			if (this.socketNcidenceCookieMap[ncidenceCookie] === undefined) {
-				this.socketNcidenceCookieMap[ncidenceCookie] = [];
+			if (this.socketAppCookieMap[appCookie] === undefined) {
+				this.socketAppCookieMap[appCookie] = [];
 			}
-			this.socketNcidenceCookieMap[ncidenceCookie].push(socket.id);
+			this.socketAppCookieMap[appCookie].push(socket.id);
 
 
 			//
@@ -194,14 +195,14 @@ class SocketHub {
 				if (socket.myChild) {
 					socket.myChild.myParent = undefined;
 				}
-				this.socketNcidenceCookieMap[ncidenceCookie].splice(this.socketNcidenceCookieMap[ncidenceCookie].indexOf(socket.id), 1);
+				this.socketAppCookieMap[appCookie].splice(this.socketAppCookieMap[appCookie].indexOf(socket.id), 1);
 				this.socketIdMap[socket.id] = undefined;
 				this.sockets.splice(this.sockets.indexOf(socket), 1);
 				this.updateRoster(socket);
 
 				const backend = this.backendBuilder.fetchFromCache(socket.subdomain);
 				if (backend && backend.disconnectSocket) {
-					backend.disconnectSocket({ ncidenceCookie: ncidenceCookie, socketId: socket.id });
+					backend.disconnectSocket({ appCookie: appCookie, socketId: socket.id });
 				}
 			});
 
@@ -226,7 +227,7 @@ class SocketHub {
 								user: {
 									username: socket.name,
 									isAnonymous: this.isAnonymousUserName(socket.name),
-									sessionId: ncidenceCookie
+									sessionId: appCookie
 								}
 							});
 						}
@@ -266,12 +267,12 @@ class SocketHub {
 
 	setUserInfo(socket) {
 		if (socket.loggedOut) {
-			socket.name = this.getAnonymousUserName(socket.cookies.ncidence);
+			socket.name = this.getAnonymousUserName(socket.cookies[this.appName]);
 		}
 		else {
 			let token = socket.token ? socket.token : this.tokenUtil.getTokenFromCookies(socket.cookies);
 			let user = token ? this.tokenUtil.verifyToken(token) : null;
-			socket.name = String((user ? user.username : null) || this.getAnonymousUserName(socket.cookies.ncidence));
+			socket.name = String((user ? user.username : null) || this.getAnonymousUserName(socket.cookies[this.appName]));
 			if (!user) {
 				this.updateRoster(socket);
 			}
