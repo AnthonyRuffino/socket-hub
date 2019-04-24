@@ -19,6 +19,10 @@ class BackendBuilder {
 		return this.cachedBackends[subdomain];
 	}
 	
+	refreshBackend(subdomain) {
+		this.backendBuilder.cachedBackends[subdomain] = null;
+	}
+	
 	build(subdomain, useCache = true) {
 		return new Promise(async (resolve, reject) => {
 			

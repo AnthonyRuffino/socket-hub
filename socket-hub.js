@@ -306,6 +306,10 @@ class SocketHub {
 	stopGameLoop(subdomain, tag) {
 		this.backendBuilder.stopGameLoop(subdomain, tag);
 	}
+	
+	refreshBackend(subdomain) {
+		this.backendBuilder.refreshBackend(subdomain);
+	}
 
 	builtInOnCommand(socket) {
 
