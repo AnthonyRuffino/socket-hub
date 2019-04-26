@@ -54,7 +54,7 @@ class BackendBuilder {
 				let storming;
 				
 				if(this.subdomainContent.getStorming) {
-					storming = await this.subdomainContent.getStorming(subdomain);
+					storming = await this.subdomainContent.getStorming({ subdomain, refreshCache: !useCache });
 				} else {
 					storming = this.storming;
 				}
