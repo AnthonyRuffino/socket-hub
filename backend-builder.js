@@ -1,10 +1,17 @@
 class BackendBuilder {
 	constructor({ backendLogs, subdomainContent, broadcast, storming }) {
 			this.backendLogs = backendLogs;
-			this.subdomainContent = subdomainContent || {
-				getStorming: null,
-				getInfo: (subdomain) => ({subdomain})
-			};
+			this.storming = storming;
+			this.subdomainContent = subdomainContent || { };
+			if(!this.subdomainContent.getAlternateContent) {
+				this.subdomainContent.getAlternateContent = () => null;
+			}
+			if(!this.subdomainContent.getInfo) {
+				this.subdomainContent.getInfo = (subdomain) => ({subdomain});
+			}
+			if(!this.subdomainContent.getStorming) {
+				this.subdomainContent.getStorming = () => storming;
+			}
 			this.broadcast = broadcast;
 			
 			this.gameloop = require('node-gameloop');
@@ -12,7 +19,7 @@ class BackendBuilder {
 			this.cachedBackends = {};
 			this.subdomainCaches = {};
 			this.cachedGameLoops = {};
-			this.storming = storming;
+			
 	}
 	
 	fetchFromCache(subdomain) {
@@ -73,12 +80,12 @@ class BackendBuilder {
 				
 				
 				// Register common and backend code
-                dataSourcesAndServices.common = await this.subdomainContent.getExports(subdomain, 'common');
+                dataSourcesAndServices.common = await this.getExports(subdomain, 'common');
 				
 				if(!this.backendLogs[subdomain]) {
 					this.backendLogs[subdomain] = [];
 				}
-				const Backend = await this.subdomainContent.getExports(subdomain, 'backend');
+				const Backend = await this.getExports(subdomain, 'backend');
 				backend = new Backend(dataSourcesAndServices);
 				
 				console.log(`[${subdomain}] - Back-end loaded`);
@@ -148,6 +155,25 @@ class BackendBuilder {
 		}else {
 			return { success: false, args: [subdomain, 'no such game loop', tag] };
 		}
+	}
+	
+	getExports(subdomain, type) {
+	  return new Promise(async(resolve, reject) => {
+	  	
+	  	let content = await this.subdomainContent.getAlternateContent({subdomain, type});
+      		
+  		if (content) {
+  			resolve(content);
+  		} else {
+  			try{
+		  		content = this.subdomainContent.getContent({subdomain, type});
+		  		resolve(content);
+		  	} catch(err) {
+		  		console.error('Failed to load content' + err);
+		  		reject('Promise Rejected - Failed to load content' + err);
+		  	}
+  		}
+	  });
 	}
 }
 
