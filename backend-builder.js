@@ -27,7 +27,7 @@ class BackendBuilder {
 	}
 	
 	refreshBackend(subdomain) {
-		this.backendBuilder.cachedBackends[subdomain] = null;
+		this.cachedBackends[subdomain] = null;
 	}
 	
 	build(subdomain, useCache = true) {
